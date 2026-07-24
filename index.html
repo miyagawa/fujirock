@@ -548,7 +548,8 @@ function setChannel(id, scroll=false){
 
 /* ---------------- render: timetable (time grid) ---------------- */
 const TT_UNIT = 5;      // minutes per grid row
-const TT_LAST = 70;     // assumed duration (min) of each channel's final act
+const TT_BREAK = 10;    // assumed changeover break before the next act (min)
+const TT_LAST = 60;     // assumed duration (min) of each channel's final act
 const COLIDX = { ch1:2, ch2:3, ch3:4 };
 
 function renderTimetable(){
@@ -562,7 +563,7 @@ function renderTimetable(){
     const set = curDay.sets[id];
     set.forEach((s,i) => {
       const a = toMin(s.t);
-      const b = (i < set.length-1) ? toMin(set[i+1].t) : a + TT_LAST;
+      const b = (i < set.length-1) ? toMin(set[i+1].t) - TT_BREAK : a + TT_LAST;
       if (a < minStart) minStart = a;
       if (b > maxEnd) maxEnd = b;
     });
@@ -588,7 +589,7 @@ function renderTimetable(){
     const set = curDay.sets[id], st = status(set, isToday, now.min);
     set.forEach((s,i) => {
       const a = toMin(s.t);
-      const b = (i < set.length-1) ? toMin(set[i+1].t) : Math.min(a + TT_LAST, dayEnd);
+      const b = (i < set.length-1) ? toMin(set[i+1].t) - TT_BREAK : Math.min(a + TT_LAST, dayEnd);
       let cls = "tt-act", tag = "";
       if (isToday){
         if (i === st.liveIdx){ cls += " live"; tag = `<span class="livetag"><span class="live-dot"></span>LIVE</span>`; }
