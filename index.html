@@ -139,19 +139,16 @@
   .tabs { display: flex; gap: 0; background: var(--tabbg); border-bottom: 1px solid var(--border); }
   .tab {
     appearance: none; cursor: pointer; font: inherit; text-align: left;
-    flex: 1 1 0; min-width: 0; padding: 11px 14px;
+    flex: 1 1 0; min-width: 0; padding: 13px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
     background: transparent; border: 0; border-bottom: 2px solid transparent;
     color: var(--muted); transition: all 160ms ease;
   }
   .tab:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text); }
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
-  .tab .lbl { display: flex; align-items: center; gap: 8px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; }
-  .tab .ch { color: var(--faint); font-weight: 500; font-size: 11px; letter-spacing: .04em; text-transform: none; }
-  .tab .now { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tab .now b { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
-  .tab .now .live-dot { vertical-align: middle; }
-  .tab[aria-selected="true"] .now { color: var(--text); }
-  .tab .nextln { display: block; margin-top: 2px; font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab .lbl { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+  .tab .ch { color: var(--faint); font-weight: 500; font-size: 11px; letter-spacing: .04em; text-transform: none; overflow: hidden; text-overflow: ellipsis; }
+  .tab-live { display: inline-flex; align-items: center; gap: 5px; flex: none; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: var(--live); }
   .dim { color: var(--faint); }
 
   .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
@@ -166,6 +163,24 @@
   .section-h h2 { margin: 0; font-family: "Oswald", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .18em; text-transform: uppercase; }
   .section-h .rule { flex: 1; height: 1px; background: var(--border); }
   .section-h .dayglow { font-family:"Anton",sans-serif; color: var(--accent); font-size: 15px; transition: color 300ms ease; }
+
+  /* ---------- on air & next ---------- */
+  .nn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .nncard {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 15px; box-shadow: var(--shadow); cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px;
+    transition: transform 140ms ease, border-color 140ms ease;
+    border-top: 3px solid var(--chc);
+  }
+  .nncard:hover { transform: translateY(-2px); border-color: var(--chc); }
+  .nncard.islive { box-shadow: var(--shadow), 0 0 0 1px color-mix(in srgb, var(--live) 42%, transparent); }
+  .nncard .cap { display: flex; align-items: center; gap: 7px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
+  .nncard .cap .chn { color: var(--chc); }
+  .nncard .art { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 19px; line-height: 1.15; margin-top: 4px; }
+  .nncard .sub { font-size: 12px; color: var(--muted); }
+  .nncard .nxt { margin-top: 9px; padding-top: 9px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
+  .nncard .nxt b { color: var(--text); font-variant-numeric: tabular-nums; }
 
   /* ---------- timetable ---------- */
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -206,6 +221,7 @@
   footer a { color: var(--muted); }
 
   @media (max-width: 860px) {
+    .nn { grid-template-columns: 1fr; }
     .grid3 { grid-template-columns: 1fr; }
     .clock { order: 3; }
   }
@@ -244,6 +260,13 @@
         allow="autoplay; fullscreen; picture-in-picture"></iframe></div>
     </div>
   </div>
+
+  <div class="section-h">
+    <h2>On Air &amp; Next</h2>
+    <span class="dayglow" id="nnDay"></span>
+    <span class="rule"></span>
+  </div>
+  <div class="nn" id="nowNext"></div>
 
   <div class="section-h">
     <h2>Timetable</h2>
@@ -432,38 +455,68 @@ function setDay(d){
   document.documentElement.style.setProperty("--accent", d.accent);
   $("days").querySelectorAll(".day").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.day===d.id));
+  $("nnDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
   $("ttDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
-  renderTabs(); renderTimetable();
+  renderTabs(); renderNowNext(); renderTimetable();
 }
 
 /* ---------------- render: channel tabs ---------------- */
 function renderTabs(){
   const now = jstParts();
   const isToday = curDay.date === now.date;
-  const dayPast = curDay.date < now.date;
   $("tabs").innerHTML = CHORDER.map(id => {
-    const set = curDay.sets[id], c = CH[id];
-    const st = status(set, isToday, now.min);
-    let nowHtml, nextHtml = "";
-    if (st.liveIdx >= 0){
-      nowHtml = `<span class="badge-live"><span class="live-dot"></span>LIVE</span> ${esc(set[st.liveIdx].a)}`;
-      if (st.nextIdx >= 0) nextHtml = `<span class="nextln">Next: ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}</span>`;
-    } else if (isToday && st.nextIdx >= 0){
-      nowHtml = `Up next · <b>${set[st.nextIdx].t}</b> ${esc(set[st.nextIdx].a)}`;
-    } else if (isToday){
-      nowHtml = `<span class="dim">Finished for today</span>`;
-    } else if (dayPast){
-      nowHtml = `<span class="dim">Ended · ${set.length} sets</span>`;
-    } else {
-      nowHtml = `Opens <b>${set[0].t}</b> · ${esc(set[0].a)}`;
-    }
+    const c = CH[id];
+    const st = status(curDay.sets[id], isToday, now.min);
+    const live = st.liveIdx >= 0 ? `<span class="tab-live"><span class="live-dot"></span>LIVE</span>` : "";
     return `<button class="tab" role="tab" data-ch="${id}" aria-selected="${id===curChannel}" style="--chc:${c.color}">
-      <span class="lbl"><span style="color:${c.color}">${c.name.replace('Channel','CH')}</span> <span class="ch">${c.login}</span></span>
-      <span class="now">${nowHtml}</span>${nextHtml}
+      <span class="lbl"><span style="color:${c.color}">${c.name.replace('Channel','CH')}</span> <span class="ch">${c.login}</span></span>${live}
     </button>`;
   }).join("");
   $("tabs").querySelectorAll(".tab").forEach(t =>
     t.onclick = () => setChannel(t.dataset.ch));
+}
+
+/* ---------------- render: on air & next ---------------- */
+function renderNowNext(){
+  const now = jstParts();
+  const isToday = curDay.date === now.date;
+  const dayPast = curDay.date < now.date;
+  $("nowNext").innerHTML = CHORDER.map(id => {
+    const c = CH[id], set = curDay.sets[id];
+    const st = status(set, isToday, now.min);
+    const chn = `<span class="chn">${c.name.replace('Channel','CH')}</span>`;
+    let cap, art, sub = "", nxt = "", cls = "";
+    if (st.liveIdx >= 0){
+      const s = set[st.liveIdx];
+      cap = `${chn} · <span class="badge-live"><span class="live-dot"></span>ON AIR</span>`;
+      art = esc(s.a);
+      sub = s.sub ? `<div class="sub">${esc(s.sub)}</div>` : "";
+      if (st.nextIdx >= 0) nxt = `<div class="nxt">Next <b>${set[st.nextIdx].t}</b> · ${esc(set[st.nextIdx].a)}</div>`;
+      cls = " islive";
+    } else if (isToday && st.nextIdx >= 0){
+      const s = set[st.nextIdx];
+      cap = `${chn} · Up next`;
+      art = esc(s.a);
+      sub = `<div class="sub">Starts ${s.t} JST${s.sub ? " · " + esc(s.sub) : ""}</div>`;
+    } else if (isToday){
+      cap = `${chn} · Wrapped`;
+      art = `<span class="dim">Finished for today</span>`;
+    } else if (dayPast){
+      cap = `${chn} · Ended`;
+      art = `<span class="dim">${set.length} sets · ${c.login}</span>`;
+    } else {
+      const s = set[0];
+      cap = `${chn} · First act`;
+      art = esc(s.a);
+      sub = `<div class="sub">Opens ${s.t} JST</div>`;
+    }
+    return `<div class="nncard${cls}" data-ch="${id}" style="--chc:${c.color}">
+      <span class="cap">${cap}</span>
+      <div class="art">${art}</div>${sub}${nxt}
+    </div>`;
+  }).join("");
+  $("nowNext").querySelectorAll(".nncard").forEach(el =>
+    el.onclick = () => setChannel(el.dataset.ch, true));
 }
 
 function setChannel(id, scroll=false){
@@ -520,7 +573,7 @@ function checkHost(){
 function tick(){
   const j = jstParts();
   $("clock").textContent = `${j.hh}:${j.mm}`;
-  renderTabs(); renderTimetable();
+  renderTabs(); renderNowNext(); renderTimetable();
 }
 
 /* ---------------- boot ---------------- */
