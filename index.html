@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FUJI ROCK '26 · Live on Twitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* light theme (base) */
+    --bg:        #eef0ea;
+    --bg-2:      #e6e9e0;
+    --surface:   #ffffff;
+    --surface-2: #f3f5ef;
+    --border:    #dbe0d5;
+    --text:      #171a15;
+    --muted:     #5d6a5e;
+    --faint:     #8a978b;
+    --accent:    #f0392e;         /* set per-day via JS */
+    --live:      #ff2d20;
+    --shadow:    0 1px 2px rgba(20,30,20,.06), 0 12px 34px rgba(20,30,20,.10);
+    --stage:     #0b0d0b;
+    --tabbg:     #f3f5ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #0b0d0b;
+      --bg-2:      #0f120f;
+      --surface:   #14181400;
+      --surface:   #151a15;
+      --surface-2: #1d221d;
+      --border:    #2a312a;
+      --text:      #eef2ec;
+      --muted:     #9caa9d;
+      --faint:     #6d7a6e;
+      --shadow:    0 1px 2px rgba(0,0,0,.5), 0 18px 46px rgba(0,0,0,.55);
+      --stage:     #000000;
+      --tabbg:     #12151200;
+      --tabbg:     #131613;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#eef0ea; --bg-2:#e6e9e0; --surface:#ffffff; --surface-2:#f3f5ef;
+    --border:#dbe0d5; --text:#171a15; --muted:#5d6a5e; --faint:#8a978b;
+    --shadow:0 1px 2px rgba(20,30,20,.06),0 12px 34px rgba(20,30,20,.10);
+    --stage:#0b0d0b; --tabbg:#f3f5ef;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0b0d0b; --bg-2:#0f120f; --surface:#151a15; --surface-2:#1d221d;
+    --border:#2a312a; --text:#eef2ec; --muted:#9caa9d; --faint:#6d7a6e;
+    --shadow:0 1px 2px rgba(0,0,0,.5),0 18px 46px rgba(0,0,0,.55);
+    --stage:#000000; --tabbg:#131613;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 78% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+      radial-gradient(900px 500px at 8% 4%, var(--bg-2), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP",
+                 "Yu Gothic", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background 400ms ease;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 28px); }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: saturate(140%) blur(12px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .bar { display: flex; align-items: center; gap: 18px; padding: 12px 0; flex-wrap: wrap; }
+  .brand { display: flex; flex-direction: column; line-height: 1; margin-right: auto; }
+  .brand b {
+    font-family: "Anton", "Oswald", "Arial Narrow", sans-serif;
+    font-weight: 400; letter-spacing: .5px;
+    font-size: clamp(22px, 3.4vw, 34px);
+    text-transform: uppercase;
+  }
+  .brand b span { color: var(--accent); transition: color 300ms ease; }
+  .brand small { color: var(--muted); font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; margin-top: 5px; }
+
+  .clock { text-align: right; font-variant-numeric: tabular-nums; }
+  .clock .t { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 20px; letter-spacing: .04em; }
+  .clock small { display: block; color: var(--faint); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+
+  .days { display: flex; gap: 8px; }
+  .day {
+    appearance: none; cursor: pointer; font: inherit;
+    display: flex; align-items: baseline; gap: 7px;
+    padding: 7px 13px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); transition: all 180ms ease;
+  }
+  .day .n { font-family: "Anton", sans-serif; font-size: 17px; color: var(--dayc); }
+  .day .w { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; }
+  .day:hover { border-color: var(--dayc); color: var(--text); }
+  .day[aria-pressed="true"] {
+    background: var(--dayc); border-color: var(--dayc); color: #fff;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--dayc) 45%, transparent);
+  }
+  .day[aria-pressed="true"] .n { color: #fff; }
+
+  /* ---------- notice ---------- */
+  .notice {
+    display: none; margin: 14px 0 0;
+    padding: 11px 15px; border-radius: 12px;
+    background: color-mix(in srgb, var(--live) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--live) 45%, var(--border));
+    color: var(--text); font-size: 13.5px;
+  }
+  .notice.show { display: block; }
+  .notice code { background: color-mix(in srgb, var(--text) 10%, transparent); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+
+  /* ---------- stage ---------- */
+  main { padding: 22px 0 60px; }
+  .stagegrid { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .stagegrid.chat-on { grid-template-columns: minmax(0,1fr) 340px; }
+
+  .player-wrap {
+    background: var(--stage); border: 1px solid var(--border); border-radius: 16px;
+    overflow: hidden; box-shadow: var(--shadow);
+    position: relative;
+  }
+  .tabs { display: flex; gap: 0; background: var(--tabbg); border-bottom: 1px solid var(--border); }
+  .tab {
+    appearance: none; cursor: pointer; font: inherit; text-align: left;
+    flex: 1 1 0; min-width: 0; padding: 11px 14px;
+    background: transparent; border: 0; border-bottom: 2px solid transparent;
+    color: var(--muted); transition: all 160ms ease;
+  }
+  .tab:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .tab .lbl { display: flex; align-items: center; gap: 8px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; }
+  .tab .ch { color: var(--faint); font-weight: 500; font-size: 11px; letter-spacing: .04em; text-transform: none; }
+  .tab .now { display: block; margin-top: 3px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab[aria-selected="true"] .now { color: var(--text); }
+
+  .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+  .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+
+  .chatcol { display: none; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); background: var(--stage); }
+  .stagegrid.chat-on .chatcol { display: block; }
+  .chatcol iframe { width: 100%; height: 100%; min-height: 420px; border: 0; display: block; }
+
+  .stage-tools { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--live) 65%,transparent);} 70%{box-shadow:0 0 0 9px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
+  .now-line { font-size: 13.5px; color: var(--muted); margin-right: auto; }
+  .now-line b { color: var(--text); font-weight: 700; }
+  .btn {
+    appearance: none; cursor: pointer; font: inherit; font-size: 13px;
+    padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); transition: all 160ms ease;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn:hover { border-color: var(--accent); }
+  .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ---------- now & next ---------- */
+  .section-h { display: flex; align-items: baseline; gap: 12px; margin: 40px 0 16px; }
+  .section-h h2 { margin: 0; font-family: "Oswald", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .18em; text-transform: uppercase; }
+  .section-h .rule { flex: 1; height: 1px; background: var(--border); }
+  .section-h .dayglow { font-family:"Anton",sans-serif; color: var(--accent); font-size: 15px; transition: color 300ms ease; }
+
+  .nn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .nncard {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 15px; box-shadow: var(--shadow); cursor: pointer;
+    display: flex; flex-direction: column; gap: 3px; transition: transform 140ms ease, border-color 140ms ease;
+    border-top: 3px solid var(--chc);
+  }
+  .nncard:hover { transform: translateY(-2px); border-color: var(--chc); }
+  .nncard .cap { display: flex; align-items: center; gap: 7px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
+  .nncard .cap .chn { color: var(--chc); }
+  .nncard .art { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 19px; line-height: 1.15; margin-top: 4px; }
+  .nncard .sub { font-size: 12px; color: var(--muted); }
+  .nncard .nxt { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
+  .nncard .nxt b { color: var(--text); font-variant-numeric: tabular-nums; }
+  .badge-live { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-weight: 800; }
+  .offair { color: var(--faint); font-style: normal; }
+
+  /* ---------- timetable ---------- */
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .col {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    overflow: hidden; box-shadow: var(--shadow);
+  }
+  .colhead {
+    appearance: none; width: 100%; cursor: pointer; font: inherit; text-align: left;
+    display: flex; align-items: center; gap: 9px; padding: 12px 14px;
+    background: color-mix(in srgb, var(--chc) 12%, var(--surface));
+    border: 0; border-bottom: 1px solid var(--border);
+    border-top: 3px solid var(--chc);
+  }
+  .colhead .num { font-family: "Anton", sans-serif; font-size: 18px; color: var(--chc); }
+  .colhead .meta { display: flex; flex-direction: column; line-height: 1.1; }
+  .colhead .meta b { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13.5px; letter-spacing: .05em; text-transform: uppercase; }
+  .colhead .meta small { color: var(--faint); font-size: 11px; }
+  .colhead .play { margin-left: auto; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  .colhead:hover .play { color: var(--chc); }
+
+  .slot {
+    display: grid; grid-template-columns: 52px 1fr; gap: 10px; align-items: start;
+    padding: 10px 14px; border-top: 1px solid var(--border); cursor: pointer;
+    transition: background 140ms ease;
+  }
+  .col .slot:first-of-type { border-top: 0; }
+  .slot:hover { background: var(--surface-2); }
+  .slot .tm { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 1px; }
+  .slot .art { font-size: 14.5px; font-weight: 600; line-height: 1.25; }
+  .slot .sub { font-size: 11.5px; color: var(--faint); margin-top: 1px; }
+  .slot.past { opacity: .42; }
+  .slot.live { background: color-mix(in srgb, var(--live) 12%, var(--surface)); box-shadow: inset 3px 0 0 var(--live); }
+  .slot.live .tm { color: var(--live); }
+  .slot .livetag { display: inline-flex; align-items: center; gap: 5px; margin-left: 8px; font-size: 10px; font-weight: 800; letter-spacing: .1em; color: var(--live); vertical-align: 1px; }
+
+  footer { color: var(--faint); font-size: 12px; text-align: center; padding: 30px 0 40px; line-height: 1.7; }
+  footer a { color: var(--muted); }
+
+  @media (max-width: 860px) {
+    .stagegrid.chat-on { grid-template-columns: 1fr; }
+    .chatcol iframe { min-height: 340px; }
+    .nn { grid-template-columns: 1fr; }
+    .grid3 { grid-template-columns: 1fr; }
+    .clock { order: 3; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .live-dot { animation: none; }
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <div class="brand">
+      <b>FUJIROCK&nbsp;<span>'26</span></b>
+      <small>Free live stream · Amazon Music on Twitch · Jul 24–26</small>
+    </div>
+    <div class="clock">
+      <div class="t" id="clock">--:--</div>
+      <small>Japan Time (JST)</small>
+    </div>
+    <div class="days" id="days" role="group" aria-label="Festival day"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="notice" id="notice"></div>
+</div>
+
+<main class="wrap">
+  <div class="stagegrid" id="stagegrid">
+    <div class="player-wrap">
+      <div class="tabs" id="tabs" role="tablist" aria-label="Channel"></div>
+      <div class="frame"><iframe id="player" title="Twitch player" allowfullscreen
+        allow="autoplay; fullscreen; picture-in-picture"></iframe></div>
+    </div>
+    <div class="chatcol"><iframe id="chat" title="Twitch chat"></iframe></div>
+  </div>
+
+  <div class="stage-tools">
+    <span class="now-line" id="stageNow"></span>
+    <button class="btn" id="chatBtn" aria-pressed="false" title="Toggle live chat">💬 Chat</button>
+  </div>
+
+  <div class="section-h">
+    <h2>On Now &amp; Next</h2>
+    <span class="dayglow" id="nnDay"></span>
+    <span class="rule"></span>
+  </div>
+  <div class="nn" id="nowNext"></div>
+
+  <div class="section-h">
+    <h2>Timetable</h2>
+    <span class="dayglow" id="ttDay"></span>
+    <span class="rule"></span>
+  </div>
+  <div class="grid3" id="timetable"></div>
+</main>
+
+<footer class="wrap">
+  Unofficial viewer for the Amazon Music free live stream. All times JST · schedule subject to change.<br>
+  Channels: <a href="https://twitch.tv/amazonmusicjp" target="_blank" rel="noopener">amazonmusicjp</a> ·
+  <a href="https://twitch.tv/amazonmusicde" target="_blank" rel="noopener">amazonmusicde</a> ·
+  <a href="https://twitch.tv/amazonmusicuk" target="_blank" rel="noopener">amazonmusicuk</a>
+</footer>
+
+<script>
+/* ---------------- data ---------------- */
+const CH = {
+  ch1: { login: "amazonmusicjp", name: "Channel 1", region: "amazonmusicjp", color: "#ff5a3c" },
+  ch2: { login: "amazonmusicde", name: "Channel 2", region: "amazonmusicde", color: "#ff8a2b" },
+  ch3: { login: "amazonmusicuk", name: "Channel 3", region: "amazonmusicuk", color: "#ffc02e" },
+};
+const CHORDER = ["ch1","ch2","ch3"];
+
+const DAYS = [
+  { id:"fri", num:"24", w:"Fri", date:"2026-07-24", accent:"#f0392e",
+    sets:{
+      ch1:[
+        {t:"11:00", a:"ROUTE 17 Rock'n'Roll ORCHESTRA", sub:"feat. 大江慎也 / 甲本ヒロト / 浅井健一 / トータス松本 · w.o.d."},
+        {t:"13:50", a:"奇妙礼太郎BAND", sub:"Strange Reitaro BAND"},
+        {t:"15:00", a:"LOYLE CARNER"},
+        {t:"16:40", a:"TORO Y MOI"},
+        {t:"18:00", a:"SNAIL MAIL"},
+        {t:"19:50", a:"ANTIBALAS"},
+        {t:"21:25", a:"The xx"},
+      ],
+      ch2:[
+        {t:"11:10", a:"テレビ大陸音頭", sub:"TV TAIRIKU ONDO"},
+        {t:"12:10", a:"CHAPPO"},
+        {t:"14:00", a:"a flood of circle"},
+        {t:"15:40", a:"ALTIN GÜN"},
+        {t:"17:00", a:"TURNSTILE"},
+        {t:"18:40", a:"ARLO PARKS"},
+        {t:"20:10", a:"HYUKOH"},
+        {t:"21:50", a:"LETTUCE"},
+      ],
+      ch3:[
+        {t:"11:30", a:"KOTORI"},
+        {t:"13:00", a:"SON ROMPE PERA"},
+        {t:"14:40", a:"Yo-Sea"},
+        {t:"16:00", a:"TESTSET"},
+        {t:"17:40", a:"OGRE YOU ASSHOLE"},
+        {t:"19:00", a:"Hi-STANDARD"},
+        {t:"20:40", a:"ASIAN KUNG-FU GENERATION"},
+      ],
+    }},
+  { id:"sat", num:"25", w:"Sat", date:"2026-07-25", accent:"#2f7fe6",
+    sets:{
+      ch1:[
+        {t:"10:20", a:"ブランデー戦記", sub:"BRANDY SENKI"},
+        {t:"11:10", a:"柴田聡子 (BAND SET)", sub:"SATOKO SHIBATA"},
+        {t:"12:10", a:"Riddim Saunter"},
+        {t:"13:20", a:"Trueno"},
+        {t:"14:40", a:"LA LOM"},
+        {t:"16:00", a:"cero"},
+        {t:"17:50", a:"JOEY VALENCE & BRAE"},
+        {t:"19:00", a:"Fujii Kaze"},
+        {t:"20:30", a:"BADBADNOTGOOD"},
+      ],
+      ch2:[
+        {t:"11:00", a:"Bialystocks"},
+        {t:"12:40", a:"QUADECA"},
+        {t:"13:50", a:"BOHEMIAN BETYARS"},
+        {t:"15:00", a:"IO"},
+        {t:"16:40", a:"OAU"},
+        {t:"18:00", a:"THURSTON MOORE GROUP"},
+        {t:"19:50", a:"XG"},
+        {t:"21:10", a:"KHRUANGBIN"},
+      ],
+      ch3:[
+        {t:"11:30", a:"SIX LOUNGE"},
+        {t:"12:50", a:"YUUF"},
+        {t:"14:00", a:"THE BETHS"},
+        {t:"15:30", a:"Kroi"},
+        {t:"17:00", a:"BASEMENT JAXX"},
+        {t:"18:30", a:"KOKOROKO"},
+        {t:"20:10", a:"サニーデイ・サービス", sub:"Sunny Day Service"},
+        {t:"22:00", a:"TOMORA"},
+      ],
+    }},
+  { id:"sun", num:"26", w:"Sun", date:"2026-07-26", accent:"#24a85a",
+    sets:{
+      ch1:[
+        {t:"10:20", a:"Aooo"},
+        {t:"11:30", a:"US"},
+        {t:"12:40", a:"浅井健一", sub:"KENICHI ASAI"},
+        {t:"13:40", a:"TÁL FRY"},
+        {t:"15:00", a:"KNEECAP"},
+        {t:"16:10", a:"SOFIA ISELLA"},
+        {t:"18:00", a:"FRIKO"},
+        {t:"19:20", a:"ANGINE DE POITRINE"},
+        {t:"21:00", a:"never young beach"},
+      ],
+      ch2:[
+        {t:"11:00", a:"平井 大", sub:"HIRAIDAI"},
+        {t:"12:40", a:"礼賛", sub:"RAISAN"},
+        {t:"14:00", a:"THE LEMON TWIGS"},
+        {t:"15:30", a:"PLINI"},
+        {t:"17:00", a:"MOGWAI"},
+        {t:"18:10", a:"GEORDIE GREEP"},
+        {t:"20:00", a:"Tempalay"},
+      ],
+      ch3:[
+        {t:"11:50", a:"人oon"},
+        {t:"13:00", a:"DONAVON FRANKENREITER"},
+        {t:"14:20", a:"GRAPEVINE"},
+        {t:"16:00", a:"the cabs"},
+        {t:"17:10", a:"THE BREAKS"},
+        {t:"19:00", a:"平沢進+会人", sub:"Susumu Hirasawa + EJIN"},
+        {t:"20:30", a:"AMERICAN FOOTBALL"},
+        {t:"22:10", a:"MITSKI"},
+      ],
+    }},
+];
+
+const LAST_BUFFER = 120; // minutes a final act stays "live"
+const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
+
+/* ---------------- JST clock ---------------- */
+function jstParts(){
+  const p = new Intl.DateTimeFormat("en-CA", {
+    timeZone:"Asia/Tokyo", year:"numeric", month:"2-digit", day:"2-digit",
+    hour:"2-digit", minute:"2-digit", hour12:false
+  }).formatToParts(new Date());
+  const g = t => p.find(x=>x.type===t).value;
+  let hh = g("hour"); if (hh === "24") hh = "00";
+  return { date:`${g("year")}-${g("month")}-${g("day")}`, min: Number(hh)*60 + Number(g("minute")), hh, mm:g("minute") };
+}
+
+/* returns {liveIdx, nextIdx} for a set given current JST, or nulls if not that day */
+function status(set, isToday, nowMin){
+  if (!isToday) return { liveIdx:-1, nextIdx:-1, isToday:false };
+  let liveIdx = -1;
+  for (let i=0;i<set.length;i++){ if (toMin(set[i].t) <= nowMin) liveIdx = i; }
+  if (liveIdx >= 0){
+    const end = (liveIdx < set.length-1) ? toMin(set[liveIdx+1].t) : toMin(set[liveIdx].t)+LAST_BUFFER;
+    if (nowMin >= end && liveIdx === set.length-1) liveIdx = -2; // finished for the day
+  }
+  let nextIdx = -1;
+  for (let i=0;i<set.length;i++){ if (toMin(set[i].t) > nowMin){ nextIdx = i; break; } }
+  return { liveIdx, nextIdx, isToday:true };
+}
+
+/* ---------------- state ---------------- */
+let curDay, curChannel = "ch1";
+const $ = id => document.getElementById(id);
+const host = () => location.hostname || "localhost";
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function playerSrc(login){ return `https://player.twitch.tv/?channel=${login}&parent=${host()}&muted=false&autoplay=true`; }
+function chatSrc(login){ return `https://www.twitch.tv/embed/${login}/chat?parent=${host()}&darkpopout`; }
+
+function pickInitialDay(){
+  const now = jstParts();
+  const match = DAYS.find(d => d.date === now.date);
+  if (match) return match;
+  if (now.date < DAYS[0].date) return DAYS[0];
+  if (now.date > DAYS[DAYS.length-1].date) return DAYS[DAYS.length-1];
+  return DAYS[0];
+}
+
+/* ---------------- render: days ---------------- */
+function renderDays(){
+  $("days").innerHTML = DAYS.map(d =>
+    `<button class="day" data-day="${d.id}" role="button" aria-pressed="${d.id===curDay.id}"
+       style="--dayc:${d.accent}">
+       <span class="n">${d.num}</span><span class="w">${d.w}</span></button>`
+  ).join("");
+  $("days").querySelectorAll(".day").forEach(b =>
+    b.onclick = () => setDay(DAYS.find(d=>d.id===b.dataset.day)));
+}
+
+function setDay(d){
+  curDay = d;
+  document.documentElement.style.setProperty("--accent", d.accent);
+  $("days").querySelectorAll(".day").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.day===d.id));
+  $("nnDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
+  $("ttDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
+  renderTabs(); renderNowNext(); renderTimetable();
+}
+
+/* ---------------- render: channel tabs ---------------- */
+function renderTabs(){
+  const now = jstParts();
+  const isToday = curDay.date === now.date;
+  $("tabs").innerHTML = CHORDER.map(id => {
+    const c = CH[id], st = status(curDay.sets[id], isToday, now.min);
+    let nowTxt = "";
+    if (st.liveIdx >= 0) nowTxt = `🔴 ${curDay.sets[id][st.liveIdx].a}`;
+    else if (st.isToday && st.nextIdx >= 0) nowTxt = `Next · ${curDay.sets[id][st.nextIdx].t} ${curDay.sets[id][st.nextIdx].a}`;
+    else nowTxt = "Schedule below";
+    return `<button class="tab" role="tab" data-ch="${id}" aria-selected="${id===curChannel}" style="--chc:${c.color}">
+      <span class="lbl"><span style="color:${c.color}">${c.name.replace('Channel','CH')}</span> <span class="ch">${c.login}</span></span>
+      <span class="now">${esc(nowTxt)}</span>
+    </button>`;
+  }).join("");
+  $("tabs").querySelectorAll(".tab").forEach(t =>
+    t.onclick = () => setChannel(t.dataset.ch));
+}
+
+function setChannel(id, scroll=false){
+  curChannel = id;
+  const login = CH[id].login;
+  $("player").src = playerSrc(login);
+  if ($("stagegrid").classList.contains("chat-on")) $("chat").src = chatSrc(login);
+  $("tabs").querySelectorAll(".tab").forEach(t =>
+    t.setAttribute("aria-selected", t.dataset.ch===id));
+  updateStageNow();
+  if (scroll) window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+function updateStageNow(){
+  const now = jstParts();
+  const isToday = curDay.date === now.date;
+  const st = status(curDay.sets[curChannel], isToday, now.min);
+  const set = curDay.sets[curChannel], c = CH[curChannel];
+  let html = `<b>${c.name}</b> · ${c.login} — `;
+  if (st.liveIdx >= 0) html += `<span class="badge-live"><span class="live-dot"></span>LIVE</span> ${esc(set[st.liveIdx].a)}`;
+  else if (isToday && st.nextIdx >= 0) html += `Up next ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}`;
+  else if (isToday) html += `<span class="offair">Day finished</span>`;
+  else html += `<span class="offair">Not streaming right now — see timetable</span>`;
+  $("stageNow").innerHTML = html;
+}
+
+/* ---------------- render: now & next ---------------- */
+function renderNowNext(){
+  const now = jstParts();
+  const isToday = curDay.date === now.date;
+  $("nowNext").innerHTML = CHORDER.map(id => {
+    const c = CH[id], set = curDay.sets[id];
+    const st = status(set, isToday, now.min);
+    let head, sub = "", nxt = "";
+    if (st.liveIdx >= 0){
+      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · <span class="badge-live"><span class="live-dot"></span>ON NOW</span></span>`;
+      sub  = set[st.liveIdx].sub ? `<div class="sub">${esc(set[st.liveIdx].sub)}</div>` : "";
+      var art = set[st.liveIdx].a;
+      if (st.nextIdx >= 0) nxt = `<div class="nxt">Next <b>${set[st.nextIdx].t}</b> · ${esc(set[st.nextIdx].a)}</div>`;
+    } else if (isToday && st.nextIdx >= 0){
+      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · Up next</span>`;
+      var art = set[st.nextIdx].a;
+      sub = `<div class="sub">Starts ${set[st.nextIdx].t} JST</div>`;
+    } else {
+      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · ${isToday ? "Finished" : "First act"}</span>`;
+      var art = isToday ? "—" : set[0].a;
+      if (!isToday) sub = `<div class="sub">${set[0].t} JST · ${c.login}</div>`;
+    }
+    return `<div class="nncard" data-ch="${id}" style="--chc:${c.color}">
+      ${head}<div class="art">${esc(art)}</div>${sub}${nxt}</div>`;
+  }).join("");
+  $("nowNext").querySelectorAll(".nncard").forEach(el =>
+    el.onclick = () => setChannel(el.dataset.ch, true));
+}
+
+/* ---------------- render: timetable ---------------- */
+function renderTimetable(){
+  const now = jstParts();
+  const isToday = curDay.date === now.date;
+  const dayPast = curDay.date < now.date;
+  $("timetable").innerHTML = CHORDER.map(id => {
+    const c = CH[id], set = curDay.sets[id];
+    const st = status(set, isToday, now.min);
+    const rows = set.map((s,i) => {
+      let cls = "slot";
+      let tag = "";
+      if (isToday){
+        if (i === st.liveIdx){ cls += " live"; tag = `<span class="livetag"><span class="live-dot"></span>LIVE</span>`; }
+        else if (st.liveIdx === -2 || (st.liveIdx>=0 ? i<st.liveIdx : toMin(s.t) < now.min)) cls += " past";
+      } else if (dayPast){ cls += " past"; }
+      return `<div class="${cls}" data-ch="${id}">
+        <div class="tm">${s.t}</div>
+        <div><div class="art">${esc(s.a)}${tag}</div>${s.sub?`<div class="sub">${esc(s.sub)}</div>`:""}</div>
+      </div>`;
+    }).join("");
+    return `<div class="col" style="--chc:${c.color}">
+      <button class="colhead" data-ch="${id}">
+        <span class="num">${c.name.replace('Channel ','')}</span>
+        <span class="meta"><b>${c.name}</b><small>${c.login}</small></span>
+        <span class="play">▶ Watch</span>
+      </button>${rows}</div>`;
+  }).join("");
+  $("timetable").querySelectorAll(".colhead").forEach(h =>
+    h.onclick = () => setChannel(h.dataset.ch, true));
+  $("timetable").querySelectorAll(".slot").forEach(s =>
+    s.onclick = () => setChannel(s.dataset.ch, true));
+}
+
+/* ---------------- chat toggle ---------------- */
+$("chatBtn").onclick = () => {
+  const on = $("stagegrid").classList.toggle("chat-on");
+  $("chatBtn").setAttribute("aria-pressed", on);
+  if (on && !$("chat").src) $("chat").src = chatSrc(CH[curChannel].login);
+};
+
+/* ---------------- file:// guard ---------------- */
+function checkHost(){
+  if (location.protocol === "file:"){
+    const n = $("notice");
+    n.classList.add("show");
+    n.innerHTML = `⚠️ Twitch won't load from a local file. Serve this page over http(s) — e.g. run <code>python3 -m http.server</code> in this folder and open <code>http://localhost:8000/fujirock-live.html</code>, or host it on your own domain. Twitch is allow-listed to the page's <code>parent=</code> domain, currently <code>${esc(host())}</code>.`;
+  }
+}
+
+/* ---------------- tick ---------------- */
+function tick(){
+  const j = jstParts();
+  $("clock").textContent = `${j.hh}:${j.mm}`;
+  renderTabs(); renderNowNext(); renderTimetable(); updateStageNow();
+}
+
+/* ---------------- boot ---------------- */
+curDay = pickInitialDay();
+renderDays();
+setDay(curDay);
+setChannel("ch1");
+checkHost();
+tick();
+setInterval(tick, 30000);
+</script>
+</body>
+</html>
