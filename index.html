@@ -98,6 +98,10 @@
   .clock { text-align: right; font-variant-numeric: tabular-nums; }
   .clock .t { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 20px; letter-spacing: .04em; }
   .clock small { display: block; color: var(--faint); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+  .tz { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; background: var(--surface); }
+  .tz button { appearance: none; cursor: pointer; font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 6px 11px; border: 0; background: transparent; color: var(--muted); transition: background 160ms ease, color 160ms ease; }
+  .tz button + button { border-left: 1px solid var(--border); }
+  .tz button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 
   .days { display: flex; gap: 8px; }
   .day {
@@ -263,7 +267,11 @@
     </div>
     <div class="clock">
       <div class="t" id="clock">--:--</div>
-      <small>Japan Time (JST)</small>
+      <small id="clockZone">Japan Time (JST)</small>
+    </div>
+    <div class="tz" id="tz" role="group" aria-label="Time zone">
+      <button type="button" data-tz="jst" aria-pressed="true">JST</button>
+      <button type="button" data-tz="local" aria-pressed="false">Local</button>
     </div>
     <div class="days" id="days" role="group" aria-label="Festival day"></div>
   </div>
@@ -298,7 +306,7 @@
 </main>
 
 <footer class="wrap">
-  Unofficial viewer for the Amazon Music free live stream. All times JST · schedule subject to change.<br>
+  Unofficial viewer for the Amazon Music free live stream. Times follow the JST / Local toggle · schedule subject to change.<br>
   Channels: <a href="https://twitch.tv/amazonmusicjp" target="_blank" rel="noopener">amazonmusicjp</a> ·
   <a href="https://twitch.tv/amazonmusicde" target="_blank" rel="noopener">amazonmusicde</a> ·
   <a href="https://twitch.tv/amazonmusicuk" target="_blank" rel="noopener">amazonmusicuk</a>
@@ -418,6 +426,22 @@ const DAYS = [
 const LAST_BUFFER = 120; // minutes a final act stays "live"
 const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m; };
 
+/* ---- time-zone display: layout stays on JST; only labels convert ---- */
+const hhmmFromMin = m => `${String(Math.floor(m/60)).padStart(2,"0")}:${String(((m%60)+60)%60).padStart(2,"0")}`;
+function fmtT(dateStr, hhmm){
+  if (tzMode === "jst") return hhmm;
+  const [h,m] = hhmm.split(":");
+  const d = new Date(`${dateStr}T${h.padStart(2,"0")}:${m}:00+09:00`);
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+function fmtMin(dateStr, mins){
+  if (tzMode === "jst") return hhmmFromMin(mins);
+  const d = new Date(`${dateStr}T00:00:00+09:00`);
+  d.setMinutes(d.getMinutes() + mins);
+  return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+}
+const zoneLabel = () => tzMode === "jst" ? "JST" : localAbbr;
+
 /* ---------------- JST clock ---------------- */
 function jstParts(){
   const p = new Intl.DateTimeFormat("en-CA", {
@@ -445,6 +469,14 @@ function status(set, isToday, nowMin){
 
 /* ---------------- state ---------------- */
 let curDay, curChannel = "ch1";
+let tzMode = (() => { try { return localStorage.getItem("frTz") === "local" ? "local" : "jst"; } catch(e){ return "jst"; } })();
+const localAbbr = (() => {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(new Date());
+    const z = p.find(x => x.type === "timeZoneName");
+    return z ? z.value : "Local";
+  } catch(e){ return "Local"; }
+})();
 const $ = id => document.getElementById(id);
 const host = () => location.hostname || "localhost";
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -512,13 +544,13 @@ function renderNowNext(){
       cap = `${chn} · <span class="badge-live"><span class="live-dot"></span>ON AIR</span>`;
       art = esc(s.a);
       sub = s.sub ? `<div class="sub">${esc(s.sub)}</div>` : "";
-      if (st.nextIdx >= 0) nxt = `<div class="nxt">Next <b>${set[st.nextIdx].t}</b> · ${esc(set[st.nextIdx].a)}</div>`;
+      if (st.nextIdx >= 0) nxt = `<div class="nxt">Next <b>${fmtT(curDay.date, set[st.nextIdx].t)}</b> · ${esc(set[st.nextIdx].a)}</div>`;
       cls = " islive";
     } else if (isToday && st.nextIdx >= 0){
       const s = set[st.nextIdx];
       cap = `${chn} · Up next`;
       art = esc(s.a);
-      sub = `<div class="sub">Starts ${s.t} JST${s.sub ? " · " + esc(s.sub) : ""}</div>`;
+      sub = `<div class="sub">Starts ${fmtT(curDay.date, s.t)} ${zoneLabel()}${s.sub ? " · " + esc(s.sub) : ""}</div>`;
     } else if (isToday){
       cap = `${chn} · Wrapped`;
       art = `<span class="dim">Finished for today</span>`;
@@ -529,7 +561,7 @@ function renderNowNext(){
       const s = set[0];
       cap = `${chn} · First act`;
       art = esc(s.a);
-      sub = `<div class="sub">Opens ${s.t} JST</div>`;
+      sub = `<div class="sub">Opens ${fmtT(curDay.date, s.t)} ${zoneLabel()}</div>`;
     }
     return `<div class="nncard${cls}" data-ch="${id}" style="--chc:${c.color}">
       <span class="cap">${cap}</span>
@@ -578,12 +610,12 @@ function renderTimetable(){
   // hour gutter
   let gutter = "";
   for (let h = dayStart; h <= dayEnd; h += 60)
-    gutter += `<div class="tt-hour" style="grid-row:${rowOf(h)}">${String(Math.floor(h/60)).padStart(2,"0")}:00</div>`;
+    gutter += `<div class="tt-hour" style="grid-row:${rowOf(h)}">${fmtMin(curDay.date, h)}</div>`;
 
   // now line
   let nowbar = "";
   if (isToday && now.min >= dayStart && now.min <= dayEnd)
-    nowbar = `<div class="tt-now" style="grid-row:${rowOf(now.min)}"><span>${now.hh}:${now.mm}</span></div>`;
+    nowbar = `<div class="tt-now" style="grid-row:${rowOf(now.min)}"><span>${fmtMin(curDay.date, now.min)}</span></div>`;
 
   // act blocks
   let blocks = "";
@@ -598,7 +630,7 @@ function renderTimetable(){
         else if (st.liveIdx === -2 || (st.liveIdx >= 0 ? i < st.liveIdx : a < now.min)) cls += " past";
       } else if (dayPast){ cls += " past"; }
       blocks += `<div class="${cls}" data-ch="${id}" style="grid-column:${COLIDX[id]};grid-row:${rowOf(a)}/${rowOf(b)};--chc:${CH[id].color}">
-        <span class="tm">${s.t}</span>
+        <span class="tm">${fmtT(curDay.date, s.t)}</span>
         <span class="art">${esc(s.a)}${tag}</span>${s.sub?`<span class="sub">${esc(s.sub)}</span>`:""}
       </div>`;
     });
@@ -634,20 +666,42 @@ function checkHost(){
 }
 
 /* ---------------- tick ---------------- */
+function updateClock(){
+  if (tzMode === "jst"){
+    const j = jstParts();
+    $("clock").textContent = `${j.hh}:${j.mm}`;
+    $("clockZone").textContent = "Japan Time (JST)";
+  } else {
+    const d = new Date();
+    $("clock").textContent = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+    $("clockZone").textContent = `Your time · ${localAbbr}`;
+  }
+}
+
+function setTz(mode){
+  tzMode = mode;
+  try { localStorage.setItem("frTz", mode); } catch(e){}
+  $("tz").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tz === mode));
+  updateClock(); renderNowNext(); renderTimetable();
+}
+
 function tick(){
-  const j = jstParts();
-  $("clock").textContent = `${j.hh}:${j.mm}`;
+  updateClock();
   renderTabs(); renderNowNext(); renderTimetable();
 }
 
 /* ---------------- boot ---------------- */
 curDay = pickInitialDay();
 renderDays();
+$("tz").querySelectorAll("button").forEach(b => {
+  b.onclick = () => setTz(b.dataset.tz);
+  b.setAttribute("aria-pressed", b.dataset.tz === tzMode);
+});
 setDay(curDay);
 setChannel("ch1");
 checkHost();
 tick();
-setInterval(tick, 30000);
+setInterval(tick, 5000);
 </script>
 </body>
 </html>
