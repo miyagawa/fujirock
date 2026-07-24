@@ -447,7 +447,7 @@ function renderTabs(){
     let nowHtml, nextHtml = "";
     if (st.liveIdx >= 0){
       nowHtml = `<span class="badge-live"><span class="live-dot"></span>LIVE</span> ${esc(set[st.liveIdx].a)}`;
-      if (st.nextIdx >= 0) nextHtml = `<span class="nextln">then ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}</span>`;
+      if (st.nextIdx >= 0) nextHtml = `<span class="nextln">Next: ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}</span>`;
     } else if (isToday && st.nextIdx >= 0){
       nowHtml = `Up next · <b>${set[st.nextIdx].t}</b> ${esc(set[st.nextIdx].a)}`;
     } else if (isToday){
