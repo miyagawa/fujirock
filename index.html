@@ -167,6 +167,7 @@
   .section-h h2 { margin: 0; font-family: "Oswald", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .18em; text-transform: uppercase; }
   .section-h .rule { flex: 1; height: 1px; background: var(--border); }
   .section-h .dayglow { font-family:"Anton",sans-serif; color: var(--accent); font-size: 15px; transition: color 300ms ease; }
+  .section-h .tt-hint { font-size: 11px; color: var(--faint); letter-spacing: .02em; white-space: nowrap; }
 
   /* ---------- on air & next ---------- */
   .nn { display: grid; grid-template-columns: 54px repeat(3, minmax(0, 1fr)); gap: 12px; }
@@ -224,6 +225,7 @@
     margin-top: -1px;
   }
   .tt-act {
+    position: relative;
     display: flex; flex-direction: column; gap: 1px;
     margin: 1.5px 0; padding: 6px 10px; overflow: hidden; cursor: pointer;
     background: var(--surface); border: 1px solid var(--border);
@@ -232,6 +234,15 @@
     transition: background 140ms ease, transform 140ms ease;
   }
   .tt-act:hover { background: var(--surface-2); transform: translateX(1px); }
+  .fav {
+    position: absolute; top: 4px; right: 7px; z-index: 2;
+    font-size: 14px; line-height: 1; cursor: pointer; user-select: none;
+    color: var(--faint); opacity: 0;
+    transition: opacity 140ms ease, transform 140ms ease;
+  }
+  .tt-act:hover .fav { opacity: .8; }
+  .fav:hover { transform: scale(1.25); opacity: 1; }
+  .fav.on { color: #f5b301; opacity: 1; }
   .tt-act .tm { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
   .tt-act .art { font-size: 13.5px; font-weight: 600; line-height: 1.2; }
   .tt-act .sub { font-size: 11px; color: var(--faint); }
@@ -300,6 +311,7 @@
   <div class="section-h">
     <h2>Timetable</h2>
     <span class="dayglow" id="ttDay"></span>
+    <span class="tt-hint">★ tap an act to bookmark · 5-min heads-up</span>
     <span class="rule"></span>
   </div>
   <div class="ttscroll" id="timetable"></div>
@@ -441,6 +453,50 @@ function fmtMin(dateStr, mins){
   return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
 }
 const zoneLabel = () => tzMode === "jst" ? "JST" : localAbbr;
+
+/* ---- favorites (bookmarks) + start-soon notifications ---- */
+const NOTIFY_LEAD = 5; // minutes before start to alert
+const favKey = (dayId, ch, t) => `${dayId}:${ch}:${t}`;
+let favs = new Set((() => { try { return JSON.parse(localStorage.getItem("frFavs") || "[]"); } catch(e){ return []; } })());
+let notified = new Set((() => { try { return JSON.parse(localStorage.getItem("frNotified") || "[]"); } catch(e){ return []; } })());
+const saveFavs = () => { try { localStorage.setItem("frFavs", JSON.stringify([...favs])); } catch(e){} };
+const saveNotified = () => { try { localStorage.setItem("frNotified", JSON.stringify([...notified])); } catch(e){} };
+
+function toggleFav(key){
+  if (favs.has(key)) { favs.delete(key); notified.delete(key); saveNotified(); }
+  else {
+    favs.add(key);
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+  }
+  saveFavs();
+  renderTimetable();
+  checkNotifications();
+}
+
+function checkNotifications(){
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const nowMs = Date.now(), lead = NOTIFY_LEAD * 60000;
+  DAYS.forEach(day => CHORDER.forEach(ch => day.sets[ch].forEach(s => {
+    const key = favKey(day.id, ch, s.t);
+    if (!favs.has(key) || notified.has(key)) return;
+    const [h,m] = s.t.split(":");
+    const startMs = new Date(`${day.date}T${h}:${m}:00+09:00`).getTime();
+    if (nowMs >= startMs - lead && nowMs < startMs + 60000){
+      notifyAct(day, ch, s, startMs - nowMs);
+      notified.add(key); saveNotified();
+    }
+  })));
+}
+
+function notifyAct(day, ch, s, msLeft){
+  const mins = Math.max(0, Math.round(msLeft / 60000));
+  const c = CH[ch];
+  const body = `${c.name} · ${fmtT(day.date, s.t)} ${zoneLabel()} · ${mins > 0 ? `starts in ~${mins} min` : "starting now"}`;
+  try {
+    const n = new Notification(`🎸 ${s.a} — Fuji Rock '26`, { body, tag: favKey(day.id, ch, s.t) });
+    n.onclick = () => { window.focus(); setDay(day); setChannel(ch, true); n.close(); };
+  } catch(e){}
+}
 
 /* ---------------- JST clock ---------------- */
 function jstParts(){
@@ -624,14 +680,17 @@ function renderTimetable(){
     set.forEach((s,i) => {
       const a = toMin(s.t);
       const b = (i < set.length-1) ? toMin(set[i+1].t) - TT_BREAK : Math.min(a + TT_LAST, dayEnd);
+      const isLive = isToday && i === st.liveIdx;
+      const key = favKey(curDay.id, id, s.t), isFav = favs.has(key);
       let cls = "tt-act", tag = "";
       if (isToday){
-        if (i === st.liveIdx){ cls += " live"; tag = `<span class="livetag"><span class="live-dot"></span>LIVE</span>`; }
+        if (isLive){ cls += " live"; tag = `<span class="livetag"><span class="live-dot"></span>LIVE</span>`; }
         else if (st.liveIdx === -2 || (st.liveIdx >= 0 ? i < st.liveIdx : a < now.min)) cls += " past";
       } else if (dayPast){ cls += " past"; }
-      blocks += `<div class="${cls}" data-ch="${id}" style="grid-column:${COLIDX[id]};grid-row:${rowOf(a)}/${rowOf(b)};--chc:${CH[id].color}">
+      blocks += `<div class="${cls}" data-key="${key}" style="grid-column:${COLIDX[id]};grid-row:${rowOf(a)}/${rowOf(b)};--chc:${CH[id].color}">
         <span class="tm">${fmtT(curDay.date, s.t)}</span>
         <span class="art">${esc(s.a)}${tag}</span>${s.sub?`<span class="sub">${esc(s.sub)}</span>`:""}
+        <span class="fav${isFav?" on":""}" data-key="${key}" role="button" aria-label="Bookmark ${esc(s.a)}" aria-pressed="${isFav}" title="Bookmark${isFav?"ed":""}">${isFav?"★":"☆"}</span>
       </div>`;
     });
   });
@@ -653,7 +712,9 @@ function renderTimetable(){
   $("timetable").querySelectorAll(".colhead").forEach(h =>
     h.onclick = () => setChannel(h.dataset.ch, true));
   $("timetable").querySelectorAll(".tt-act").forEach(a =>
-    a.onclick = () => setChannel(a.dataset.ch, true));
+    a.onclick = () => toggleFav(a.dataset.key));
+  $("timetable").querySelectorAll(".fav").forEach(f =>
+    f.onclick = e => { e.stopPropagation(); toggleFav(f.dataset.key); });
 }
 
 /* ---------------- file:// guard ---------------- */
@@ -688,6 +749,7 @@ function setTz(mode){
 function tick(){
   updateClock();
   renderTabs(); renderNowNext(); renderTimetable();
+  checkNotifications();
 }
 
 /* ---------------- boot ---------------- */
