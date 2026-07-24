@@ -55,19 +55,25 @@
   }
 
   * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0;
+  html {
+    scroll-behavior: smooth;
+    min-height: 100%;
     background:
       radial-gradient(1200px 600px at 78% -8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
       radial-gradient(900px 500px at 8% 4%, var(--bg-2), transparent 55%),
       var(--bg);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    transition: background 400ms ease;
+  }
+  body {
+    margin: 0;
+    background: transparent;
     color: var(--text);
     font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP",
                  "Yu Gothic", "Segoe UI", system-ui, sans-serif;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    transition: background 400ms ease;
   }
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 clamp(14px, 3vw, 28px); }
 
