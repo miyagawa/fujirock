@@ -165,7 +165,8 @@
   .section-h .dayglow { font-family:"Anton",sans-serif; color: var(--accent); font-size: 15px; transition: color 300ms ease; }
 
   /* ---------- on air & next ---------- */
-  .nn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .nn { display: grid; grid-template-columns: 54px repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .nn-gutter { display: block; }
   .nncard {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
     padding: 14px 15px; box-shadow: var(--shadow); cursor: pointer;
@@ -242,6 +243,7 @@
 
   @media (max-width: 860px) {
     .nn { grid-template-columns: 1fr; }
+    .nn-gutter { display: none; }
     .clock { order: 3; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -500,7 +502,7 @@ function renderNowNext(){
   const now = jstParts();
   const isToday = curDay.date === now.date;
   const dayPast = curDay.date < now.date;
-  $("nowNext").innerHTML = CHORDER.map(id => {
+  $("nowNext").innerHTML = `<div class="nn-gutter"></div>` + CHORDER.map(id => {
     const c = CH[id], set = curDay.sets[id];
     const st = status(set, isToday, now.min);
     const chn = `<span class="chn">${c.name.replace('Channel','CH')}</span>`;
