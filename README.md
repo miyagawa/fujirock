@@ -3,9 +3,9 @@
 Unofficial single-page viewer for the **FUJI ROCK FESTIVAL '26** free live streams
 on Twitch (Amazon Music — Channels 1/2/3 = `amazonmusicjp` / `amazonmusicde` / `amazonmusicuk`).
 
-- One embedded Twitch player with channel switching + optional live chat
+- One embedded Twitch player with channel switching
 - Full 3-day timetable (Jul 24–26, all times **JST**)
-- Real-time **ON NOW / Up next** detection computed in JST
+- Real-time **LIVE / Up next** detection (in JST), surfaced in the channel tabs
 - Day-colored theme (Fri red · Sat blue · Sun green), light + dark
 
 Hosted at **https://miyagawa.co/fujirock/** via GitHub Pages.

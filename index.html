@@ -124,7 +124,6 @@
   /* ---------- stage ---------- */
   main { padding: 22px 0 60px; }
   .stagegrid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-  .stagegrid.chat-on { grid-template-columns: minmax(0,1fr) 340px; }
 
   .player-wrap {
     background: var(--stage); border: 1px solid var(--border); border-radius: 16px;
@@ -142,52 +141,25 @@
   .tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
   .tab .lbl { display: flex; align-items: center; gap: 8px; font-family: "Oswald", sans-serif; font-weight: 600; font-size: 13.5px; letter-spacing: .06em; text-transform: uppercase; }
   .tab .ch { color: var(--faint); font-weight: 500; font-size: 11px; letter-spacing: .04em; text-transform: none; }
-  .tab .now { display: block; margin-top: 3px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab .now { display: block; margin-top: 4px; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tab .now b { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+  .tab .now .live-dot { vertical-align: middle; }
   .tab[aria-selected="true"] .now { color: var(--text); }
+  .tab .nextln { display: block; margin-top: 2px; font-size: 11px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dim { color: var(--faint); }
 
   .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; }
   .frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 
-  .chatcol { display: none; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); background: var(--stage); }
-  .stagegrid.chat-on .chatcol { display: block; }
-  .chatcol iframe { width: 100%; height: 100%; min-height: 420px; border: 0; display: block; }
-
-  .stage-tools { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent); animation: pulse 1.8s infinite; }
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--live); box-shadow: 0 0 0 0 color-mix(in srgb, var(--live) 70%, transparent); animation: pulse 1.8s infinite; }
   @keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--live) 65%,transparent);} 70%{box-shadow:0 0 0 9px transparent;} 100%{box-shadow:0 0 0 0 transparent;} }
-  .now-line { font-size: 13.5px; color: var(--muted); margin-right: auto; }
-  .now-line b { color: var(--text); font-weight: 700; }
-  .btn {
-    appearance: none; cursor: pointer; font: inherit; font-size: 13px;
-    padding: 7px 14px; border-radius: 999px; border: 1px solid var(--border);
-    background: var(--surface); color: var(--text); transition: all 160ms ease;
-    display: inline-flex; align-items: center; gap: 7px;
-  }
-  .btn:hover { border-color: var(--accent); }
-  .btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .badge-live { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-weight: 800; }
 
   /* ---------- now & next ---------- */
   .section-h { display: flex; align-items: baseline; gap: 12px; margin: 40px 0 16px; }
   .section-h h2 { margin: 0; font-family: "Oswald", sans-serif; font-weight: 700; font-size: 15px; letter-spacing: .18em; text-transform: uppercase; }
   .section-h .rule { flex: 1; height: 1px; background: var(--border); }
   .section-h .dayglow { font-family:"Anton",sans-serif; color: var(--accent); font-size: 15px; transition: color 300ms ease; }
-
-  .nn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-  .nncard {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
-    padding: 14px 15px; box-shadow: var(--shadow); cursor: pointer;
-    display: flex; flex-direction: column; gap: 3px; transition: transform 140ms ease, border-color 140ms ease;
-    border-top: 3px solid var(--chc);
-  }
-  .nncard:hover { transform: translateY(-2px); border-color: var(--chc); }
-  .nncard .cap { display: flex; align-items: center; gap: 7px; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); font-weight: 700; }
-  .nncard .cap .chn { color: var(--chc); }
-  .nncard .art { font-family: "Oswald", sans-serif; font-weight: 600; font-size: 19px; line-height: 1.15; margin-top: 4px; }
-  .nncard .sub { font-size: 12px; color: var(--muted); }
-  .nncard .nxt { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); }
-  .nncard .nxt b { color: var(--text); font-variant-numeric: tabular-nums; }
-  .badge-live { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-weight: 800; }
-  .offair { color: var(--faint); font-style: normal; }
 
   /* ---------- timetable ---------- */
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -228,9 +200,6 @@
   footer a { color: var(--muted); }
 
   @media (max-width: 860px) {
-    .stagegrid.chat-on { grid-template-columns: 1fr; }
-    .chatcol iframe { min-height: 340px; }
-    .nn { grid-template-columns: 1fr; }
     .grid3 { grid-template-columns: 1fr; }
     .clock { order: 3; }
   }
@@ -268,20 +237,7 @@
       <div class="frame"><iframe id="player" title="Twitch player" allowfullscreen
         allow="autoplay; fullscreen; picture-in-picture"></iframe></div>
     </div>
-    <div class="chatcol"><iframe id="chat" title="Twitch chat"></iframe></div>
   </div>
-
-  <div class="stage-tools">
-    <span class="now-line" id="stageNow"></span>
-    <button class="btn" id="chatBtn" aria-pressed="false" title="Toggle live chat">💬 Chat</button>
-  </div>
-
-  <div class="section-h">
-    <h2>On Now &amp; Next</h2>
-    <span class="dayglow" id="nnDay"></span>
-    <span class="rule"></span>
-  </div>
-  <div class="nn" id="nowNext"></div>
 
   <div class="section-h">
     <h2>Timetable</h2>
@@ -443,7 +399,6 @@ const host = () => location.hostname || "localhost";
 const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 function playerSrc(login){ return `https://player.twitch.tv/?channel=${login}&parent=${host()}&muted=false&autoplay=true`; }
-function chatSrc(login){ return `https://www.twitch.tv/embed/${login}/chat?parent=${host()}&darkpopout`; }
 
 function pickInitialDay(){
   const now = jstParts();
@@ -470,24 +425,34 @@ function setDay(d){
   document.documentElement.style.setProperty("--accent", d.accent);
   $("days").querySelectorAll(".day").forEach(b =>
     b.setAttribute("aria-pressed", b.dataset.day===d.id));
-  $("nnDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
   $("ttDay").textContent = `${d.num} ${d.w.toUpperCase()}`;
-  renderTabs(); renderNowNext(); renderTimetable();
+  renderTabs(); renderTimetable();
 }
 
 /* ---------------- render: channel tabs ---------------- */
 function renderTabs(){
   const now = jstParts();
   const isToday = curDay.date === now.date;
+  const dayPast = curDay.date < now.date;
   $("tabs").innerHTML = CHORDER.map(id => {
-    const c = CH[id], st = status(curDay.sets[id], isToday, now.min);
-    let nowTxt = "";
-    if (st.liveIdx >= 0) nowTxt = `🔴 ${curDay.sets[id][st.liveIdx].a}`;
-    else if (st.isToday && st.nextIdx >= 0) nowTxt = `Next · ${curDay.sets[id][st.nextIdx].t} ${curDay.sets[id][st.nextIdx].a}`;
-    else nowTxt = "Schedule below";
+    const set = curDay.sets[id], c = CH[id];
+    const st = status(set, isToday, now.min);
+    let nowHtml, nextHtml = "";
+    if (st.liveIdx >= 0){
+      nowHtml = `<span class="badge-live"><span class="live-dot"></span>LIVE</span> ${esc(set[st.liveIdx].a)}`;
+      if (st.nextIdx >= 0) nextHtml = `<span class="nextln">then ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}</span>`;
+    } else if (isToday && st.nextIdx >= 0){
+      nowHtml = `Up next · <b>${set[st.nextIdx].t}</b> ${esc(set[st.nextIdx].a)}`;
+    } else if (isToday){
+      nowHtml = `<span class="dim">Finished for today</span>`;
+    } else if (dayPast){
+      nowHtml = `<span class="dim">Ended · ${set.length} sets</span>`;
+    } else {
+      nowHtml = `Opens <b>${set[0].t}</b> · ${esc(set[0].a)}`;
+    }
     return `<button class="tab" role="tab" data-ch="${id}" aria-selected="${id===curChannel}" style="--chc:${c.color}">
       <span class="lbl"><span style="color:${c.color}">${c.name.replace('Channel','CH')}</span> <span class="ch">${c.login}</span></span>
-      <span class="now">${esc(nowTxt)}</span>
+      <span class="now">${nowHtml}</span>${nextHtml}
     </button>`;
   }).join("");
   $("tabs").querySelectorAll(".tab").forEach(t =>
@@ -496,55 +461,10 @@ function renderTabs(){
 
 function setChannel(id, scroll=false){
   curChannel = id;
-  const login = CH[id].login;
-  $("player").src = playerSrc(login);
-  if ($("stagegrid").classList.contains("chat-on")) $("chat").src = chatSrc(login);
+  $("player").src = playerSrc(CH[id].login);
   $("tabs").querySelectorAll(".tab").forEach(t =>
     t.setAttribute("aria-selected", t.dataset.ch===id));
-  updateStageNow();
   if (scroll) window.scrollTo({ top:0, behavior:"smooth" });
-}
-
-function updateStageNow(){
-  const now = jstParts();
-  const isToday = curDay.date === now.date;
-  const st = status(curDay.sets[curChannel], isToday, now.min);
-  const set = curDay.sets[curChannel], c = CH[curChannel];
-  let html = `<b>${c.name}</b> · ${c.login} — `;
-  if (st.liveIdx >= 0) html += `<span class="badge-live"><span class="live-dot"></span>LIVE</span> ${esc(set[st.liveIdx].a)}`;
-  else if (isToday && st.nextIdx >= 0) html += `Up next ${set[st.nextIdx].t} · ${esc(set[st.nextIdx].a)}`;
-  else if (isToday) html += `<span class="offair">Day finished</span>`;
-  else html += `<span class="offair">Not streaming right now — see timetable</span>`;
-  $("stageNow").innerHTML = html;
-}
-
-/* ---------------- render: now & next ---------------- */
-function renderNowNext(){
-  const now = jstParts();
-  const isToday = curDay.date === now.date;
-  $("nowNext").innerHTML = CHORDER.map(id => {
-    const c = CH[id], set = curDay.sets[id];
-    const st = status(set, isToday, now.min);
-    let head, sub = "", nxt = "";
-    if (st.liveIdx >= 0){
-      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · <span class="badge-live"><span class="live-dot"></span>ON NOW</span></span>`;
-      sub  = set[st.liveIdx].sub ? `<div class="sub">${esc(set[st.liveIdx].sub)}</div>` : "";
-      var art = set[st.liveIdx].a;
-      if (st.nextIdx >= 0) nxt = `<div class="nxt">Next <b>${set[st.nextIdx].t}</b> · ${esc(set[st.nextIdx].a)}</div>`;
-    } else if (isToday && st.nextIdx >= 0){
-      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · Up next</span>`;
-      var art = set[st.nextIdx].a;
-      sub = `<div class="sub">Starts ${set[st.nextIdx].t} JST</div>`;
-    } else {
-      head = `<span class="cap"><span class="chn">${c.name.replace('Channel','CH')}</span> · ${isToday ? "Finished" : "First act"}</span>`;
-      var art = isToday ? "—" : set[0].a;
-      if (!isToday) sub = `<div class="sub">${set[0].t} JST · ${c.login}</div>`;
-    }
-    return `<div class="nncard" data-ch="${id}" style="--chc:${c.color}">
-      ${head}<div class="art">${esc(art)}</div>${sub}${nxt}</div>`;
-  }).join("");
-  $("nowNext").querySelectorAll(".nncard").forEach(el =>
-    el.onclick = () => setChannel(el.dataset.ch, true));
 }
 
 /* ---------------- render: timetable ---------------- */
@@ -580,13 +500,6 @@ function renderTimetable(){
     s.onclick = () => setChannel(s.dataset.ch, true));
 }
 
-/* ---------------- chat toggle ---------------- */
-$("chatBtn").onclick = () => {
-  const on = $("stagegrid").classList.toggle("chat-on");
-  $("chatBtn").setAttribute("aria-pressed", on);
-  if (on && !$("chat").src) $("chat").src = chatSrc(CH[curChannel].login);
-};
-
 /* ---------------- file:// guard ---------------- */
 function checkHost(){
   if (location.protocol === "file:"){
@@ -600,7 +513,7 @@ function checkHost(){
 function tick(){
   const j = jstParts();
   $("clock").textContent = `${j.hh}:${j.mm}`;
-  renderTabs(); renderNowNext(); renderTimetable(); updateStageNow();
+  renderTabs(); renderTimetable();
 }
 
 /* ---------------- boot ---------------- */
